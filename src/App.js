@@ -35,7 +35,7 @@ function App() {
             <Typography variant="h6" component={Link} to="/" sx={{ color: "white", textDecoration: "none" }}>
               Home
             </Typography>
-            {isLoggedIn && <Button color="inherit" sx={{ textTransform: "none", fontSize: "1.1rem", }} component={Link} to="/upload">Upload</Button>}
+            {isLoggedIn && <Button color="inherit" sx={{ textTransform: "none", fontSize: "1.1rem", }} component={Link} to="/upload">Analyze Excel</Button>}
             {!isLoggedIn && (
               <>
                 <Button color="inherit" sx={{ textTransform: "none" , fontSize: "1.1rem",}} component={Link} to="/signup">Signup</Button>

@@ -5,6 +5,10 @@ import {  Chart as ChartJS,  CategoryScale, LinearScale, BarElement, LineElement
 import { Bar, Line, Pie } from "react-chartjs-2";
 import html2canvas from "html2canvas";
 import jsPDF from "jspdf";
+import WarningIcon from '@mui/icons-material/Warning';
+import ImageIcon from '@mui/icons-material/Image';
+import ArrowCircleDownIcon from '@mui/icons-material/ArrowCircleDown';
+import PictureAsPdfIcon from '@mui/icons-material/PictureAsPdf';
 
 ChartJS.register(CategoryScale, LinearScale, BarElement, LineElement, PointElement, ArcElement, Tooltip, Legend);
 
@@ -22,7 +26,7 @@ const ChartViewer = () => {
     return (
       <Box p={4} sx={{ textAlign: "center" }}>
         <Typography color="error" variant="h6">
-          ❌ No chart data found.
+           No chart data found.
         </Typography>
         <Button
           variant="contained"
@@ -30,7 +34,7 @@ const ChartViewer = () => {
           sx={{ mt: 3 }}
           onClick={() => navigate("/upload")}
         >
-          ← Go Back to Upload
+           Go Back to Upload
         </Button>
       </Box>
     );
@@ -197,15 +201,20 @@ const ChartViewer = () => {
 </FormControl>
 
 
-        <Typography variant="subtitle1" gutterBottom sx={{ mt: 3 }}>
-          📥 Download
-        </Typography>
+        <Typography
+  variant="subtitle1"
+  gutterBottom
+  sx={{ mt: 3, display: "flex", alignItems: "center", gap: 1 }}
+>
+  <ArrowCircleDownIcon />
+  Download
+</Typography>
 
         <Button fullWidth variant="outlined" onClick={handleDownloadPNG} sx={{ mb: 1 }}>
-          📸 Download PNG
+          <ImageIcon/> Download PNG
         </Button>
         <Button fullWidth variant="outlined" onClick={handleDownloadPDF}>
-          📄 Download PDF
+          <PictureAsPdfIcon/>Download PDF
         </Button>
       </Box>
 
@@ -217,7 +226,7 @@ const ChartViewer = () => {
 
         {showSingleOnlyWarning && (
           <Typography color="error" sx={{ mb: 2 }}>
-            ⚠️ {chartType} chart supports only one Y-axis. Showing only the first selected column.
+            <WarningIcon/> {chartType} chart supports only one Y-axis. Showing only the first selected column.
           </Typography>
         )}
 
