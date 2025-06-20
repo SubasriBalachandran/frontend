@@ -1,4 +1,3 @@
-// Updated Upload.js with history tracking
 import React, { useState, useEffect } from "react";
 import axios from "axios";
 import {
@@ -16,22 +15,34 @@ import {
   Divider,
 } from "@mui/material";
 import UploadFileIcon from "@mui/icons-material/UploadFile";
+import { useNavigate } from "react-router-dom";
 
 const Upload = () => {
+  const navigate = useNavigate();
+  const token = localStorage.getItem("token");
+
   const [file, setFile] = useState(null);
   const [uploadMsg, setUploadMsg] = useState("");
   const [summary, setSummary] = useState(null);
   const [loading, setLoading] = useState(false);
-  const [history, setHistory] = useState(() => {
-    // Load from localStorage if available
-    const saved = localStorage.getItem("uploadHistory");
-    return saved ? JSON.parse(saved) : [];
-  });
+  const [history, setHistory] = useState([]);
 
+  // Fetch upload history
   useEffect(() => {
-    // Save to localStorage whenever history changes
-    localStorage.setItem("uploadHistory", JSON.stringify(history));
-  }, [history]);
+    const fetchHistory = async () => {
+      if (!token) return;
+      try {
+        const res = await axios.get("http://localhost:5000/api/upload/history", {
+          headers: { Authorization: `Bearer ${token}` },
+        });
+        setHistory(res.data.uploads || []);
+      } catch (error) {
+        console.error("Failed to fetch upload history:", error);
+      }
+    };
+
+    fetchHistory();
+  }, [token]);
 
   const handleFileChange = (e) => {
     setFile(e.target.files[0]);
@@ -45,32 +56,44 @@ const Upload = () => {
 
     try {
       setLoading(true);
-      const uploadRes = await axios.post("http://localhost:5000/api/upload/excel", formData);
-      setUploadMsg(uploadRes.data.message);
 
-      const summaryRes = await axios.get("http://localhost:5000/api/analysis/summary");
-      setSummary(summaryRes.data.summary);
+      const res = await axios.post("http://localhost:5000/api/upload/excel", formData, {
+        headers: {
+          "Content-Type": "multipart/form-data",
+          Authorization: `Bearer ${token}`,
+        },
+      });
 
-      const entry = {
-        fileName: file.name,
-        summary: summaryRes.data.summary,
-        timestamp: new Date().toLocaleString(),
-      };
+      const { message, summary, data: parsedData, columns: parsedColumns } = res.data;
+      setUploadMsg(message);
+      setSummary(summary);
 
-      setHistory([entry, ...history]);
+      navigate("/chart", { state: { data: parsedData, columns: parsedColumns } });
+
+      // Refresh history after upload
+      const updated = await axios.get("http://localhost:5000/api/upload/history", {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      setHistory(updated.data.uploads || []);
     } catch (error) {
-      console.error("Error:", error);
+      console.error("Upload failed:", error);
       setUploadMsg("Upload failed");
     } finally {
       setLoading(false);
     }
   };
 
+  const handleHistoryClick = (entry) => {
+    if (entry.rows && entry.summary?.columns) {
+      navigate("/chart", { state: { data: entry.rows, columns: entry.summary.columns } });
+    } else {
+      alert("No data available for this file.");
+    }
+  };
+
   return (
     <Box sx={{ p: 4 }}>
-      <Typography variant="h4" gutterBottom>
-        📤 Upload Excel File
-      </Typography>
+      <Typography variant="h4" gutterBottom>📤 Upload Excel File</Typography>
 
       <Input
         type="file"
@@ -99,9 +122,7 @@ const Upload = () => {
       {summary && (
         <Card sx={{ mt: 4, backgroundColor: "#f5f5f5" }}>
           <CardContent>
-            <Typography variant="h5" gutterBottom>
-              📊 Current Upload Summary
-            </Typography>
+            <Typography variant="h6" gutterBottom>📊 Upload Summary</Typography>
             <pre>{JSON.stringify(summary, null, 2)}</pre>
           </CardContent>
         </Card>
@@ -109,25 +130,21 @@ const Upload = () => {
 
       {history.length > 0 && (
         <Box mt={6}>
-          <Typography variant="h5" gutterBottom>
-            🕓 Upload History
-          </Typography>
+          <Typography variant="h5" gutterBottom>🕓 Upload History</Typography>
           <List>
             {history.map((entry, index) => (
-              <React.Fragment key={index}>
-                <ListItem alignItems="flex-start">
+              <React.Fragment key={entry._id || index}>
+                <ListItem button onClick={() => handleHistoryClick(entry)}>
                   <ListItemText
                     primary={`📁 ${entry.fileName}`}
                     secondary={
                       <>
-                        <Typography
-                          component="span"
-                          variant="body2"
-                          color="text.primary"
-                        >
-                          {entry.timestamp}
+                        <Typography component="span" variant="body2" color="text.primary">
+                          {new Date(entry.uploadedAt).toLocaleString()}
                         </Typography>
-                        <pre style={{ whiteSpace: "pre-wrap" }}>{JSON.stringify(entry.summary, null, 2)}</pre>
+                        <pre style={{ whiteSpace: "pre-wrap" }}>
+                          {JSON.stringify(entry.summary, null, 2)}
+                        </pre>
                       </>
                     }
                   />

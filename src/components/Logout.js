@@ -3,7 +3,7 @@ const Logout = ({ onLogout }) => {
   const handleLogout = () => {
     localStorage.removeItem("token");
     if (onLogout) onLogout();
-    window.location.href = "/"; 
+    window.location.href = "/home"; 
   };
 
   return <button onClick={handleLogout}>Logout</button>;

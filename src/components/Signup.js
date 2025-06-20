@@ -22,38 +22,35 @@ const SignUp = () => {
 
   const navigate = useNavigate();
 
-  const handleOnchange = (e) => {
-    setUserDetails({
-      ...userDetails,
-      [e.target.name]: e.target.value,
-    });
+  const handleOnChange = (e) => {
+    setUserDetails({ ...userDetails, [e.target.name]: e.target.value });
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    setError("");
 
-    if (
-      userDetails.name === "" ||
-      userDetails.email === "" ||
-      userDetails.password === "" ||
-      userDetails.confirm_password === ""
-    ) {
+    const { name, email, password, confirm_password, role } = userDetails;
+
+    if (!name || !email || !password || !confirm_password) {
       setError("Please fill in all the required fields");
       return;
     }
 
-    if (userDetails.password !== userDetails.confirm_password) {
+    if (password !== confirm_password) {
       setError("Passwords do not match");
       return;
     }
 
     try {
-      const { confirm_password, ...dataToSend } = userDetails;
-      const response = await axios.post(
-        "http://localhost:5000/api/auth/signup",
-        dataToSend
-      );
-      console.log("Signup success:", response.data);
+      const res = await axios.post("http://localhost:5000/api/auth/signup", {
+        name,
+        email,
+        password,
+        role,
+      });
+
+      console.log("Signup success:", res.data);
       alert("Signup successful!");
       navigate("/login");
     } catch (err) {
@@ -68,7 +65,7 @@ const SignUp = () => {
         backgroundImage: `url('https://images.unsplash.com/photo-1542744173-05336fcc7ad4')`,
         backgroundSize: "cover",
         backgroundPosition: "center",
-        minHeight: "100vh",
+        minHeight: "90vh",
         display: "flex",
         alignItems: "center",
         justifyContent: "center",
@@ -92,8 +89,9 @@ const SignUp = () => {
             label="Name"
             name="name"
             value={userDetails.name}
-            onChange={handleOnchange}
+            onChange={handleOnChange}
             margin="normal"
+            required
           />
           <TextField
             fullWidth
@@ -101,8 +99,9 @@ const SignUp = () => {
             type="email"
             name="email"
             value={userDetails.email}
-            onChange={handleOnchange}
+            onChange={handleOnChange}
             margin="normal"
+            required
           />
           <TextField
             fullWidth
@@ -110,8 +109,9 @@ const SignUp = () => {
             type="password"
             name="password"
             value={userDetails.password}
-            onChange={handleOnchange}
+            onChange={handleOnChange}
             margin="normal"
+            required
           />
           <TextField
             fullWidth
@@ -119,8 +119,9 @@ const SignUp = () => {
             type="password"
             name="confirm_password"
             value={userDetails.confirm_password}
-            onChange={handleOnchange}
+            onChange={handleOnChange}
             margin="normal"
+            required
           />
 
           <Button
