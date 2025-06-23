@@ -26,8 +26,9 @@ const Upload = () => {
   const [summary, setSummary] = useState(null);
   const [loading, setLoading] = useState(false);
   const [history, setHistory] = useState([]);
+  const [backupHistory, setBackupHistory] = useState([]);
+  const [showUndo, setShowUndo] = useState(false);
 
-  // Fetch upload history
   useEffect(() => {
     const fetchHistory = async () => {
       if (!token) return;
@@ -70,7 +71,6 @@ const Upload = () => {
 
       navigate("/chart", { state: { data: parsedData, columns: parsedColumns } });
 
-      // Refresh history after upload
       const updated = await axios.get("http://localhost:5000/api/upload/history", {
         headers: { Authorization: `Bearer ${token}` },
       });
@@ -88,6 +88,41 @@ const Upload = () => {
       navigate("/chart", { state: { data: entry.rows, columns: entry.summary.columns } });
     } else {
       alert("No data available for this file.");
+    }
+  };
+
+  const handleClearHistory = async () => {
+    if (!window.confirm("Are you sure you want to clear your upload history?")) return;
+
+    try {
+      setBackupHistory(history); 
+      await axios.delete("http://localhost:5000/api/upload/history", {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      setHistory([]);
+      setShowUndo(true);
+      setUploadMsg("Upload history cleared successfully. You can undo this.");
+    } catch (error) {
+      console.error("Failed to clear history:", error);
+      setUploadMsg("Failed to clear history");
+    }
+  };
+
+  const handleUndoClear = async () => {
+    try {
+      const res = await axios.post("http://localhost:5000/api/upload/restore", {
+        uploads: backupHistory,
+      }, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+
+      setHistory(res.data.uploads || backupHistory);
+      setBackupHistory([]);
+      setShowUndo(false);
+      setUploadMsg("Upload history restored.");
+    } catch (error) {
+      console.error("Failed to restore history:", error);
+      setUploadMsg("Failed to restore history");
     }
   };
 
@@ -113,9 +148,17 @@ const Upload = () => {
 
       {uploadMsg && (
         <Box mt={2}>
-          <Alert severity={uploadMsg === "Upload failed" ? "error" : "success"}>
+          <Alert severity={uploadMsg.includes("fail") ? "error" : "success"}>
             {uploadMsg}
           </Alert>
+        </Box>
+      )}
+
+      {showUndo && (
+        <Box mt={2}>
+          <Button variant="outlined" color="primary" onClick={handleUndoClear}>
+            Undo Clear History
+          </Button>
         </Box>
       )}
 
@@ -130,7 +173,13 @@ const Upload = () => {
 
       {history.length > 0 && (
         <Box mt={6}>
-          <Typography variant="h5" gutterBottom>🕓 Upload History</Typography>
+          <Box display="flex" alignItems="center" justifyContent="space-between">
+            <Typography variant="h5" gutterBottom>🕓 Upload History</Typography>
+            <Button variant="outlined" color="error" onClick={handleClearHistory}>
+              Clear History
+            </Button>
+          </Box>
+
           <List>
             {history.map((entry, index) => (
               <React.Fragment key={entry._id || index}>
